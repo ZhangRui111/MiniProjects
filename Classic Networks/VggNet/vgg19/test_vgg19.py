@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 import vgg19
-import utils
+from VggNet import utils
 
 vgg19_npy_path = './npy/vgg19.npy'
 

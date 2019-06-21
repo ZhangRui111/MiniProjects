@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 import vgg16
-import utils
+from VggNet import utils
 
 vgg16_npy_path = './npy/vgg16.npy'  # # vgg16.npy文件路径
 
