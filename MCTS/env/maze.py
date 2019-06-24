@@ -87,23 +87,40 @@ class Maze(tk.Tk, object):
 
         return obser
 
-    def reset(self):
+    def reset(self, player_position=None):
         self.update()
         self.canvas.delete(self.player)
-        # reset the player.
-        player_center = self.origin + np.array(
-            [self.unit * self.player_origin[0][0], self.unit * self.player_origin[0][1]])
-        self.player = self.canvas.create_oval(
-            player_center[0] - 15, player_center[1] - 15,
-            player_center[0] + 15, player_center[1] + 15,
-            fill='yellow')
-        # return observation
-        if self.full:
-            obser = self.observation.copy()
-            obser[self.player_origin[0][0], self.player_origin[0][1]] = 1
-            return obser.T
+
+        if player_position is None:
+            # reset the player.
+            player_center = self.origin + np.array(
+                [self.unit * self.player_origin[0][0], self.unit * self.player_origin[0][1]])
+            self.player = self.canvas.create_oval(
+                player_center[0] - 15, player_center[1] - 15,
+                player_center[0] + 15, player_center[1] + 15,
+                fill='yellow')
+            # return observation
+            if self.full:
+                obser = self.observation.copy()
+                obser[self.player_origin[0][0], self.player_origin[0][1]] = 1
+                return obser.T
+            else:
+                return self.canvas.coords(self.player)
         else:
-            return self.canvas.coords(self.player)
+            # reset the player.
+            player_center = self.origin + np.array(
+                [self.unit * player_position[0][0], self.unit * player_position[0][1]])
+            self.player = self.canvas.create_oval(
+                player_center[0] - 15, player_center[1] - 15,
+                player_center[0] + 15, player_center[1] + 15,
+                fill='yellow')
+            # return observation
+            if self.full:
+                obser = self.observation.copy()
+                obser[player_position[0][0], player_position[0][1]] = 1
+                return obser.T
+            else:
+                return self.canvas.coords(self.player)
 
     def step(self, action):
         s = self.canvas.coords(self.player)
