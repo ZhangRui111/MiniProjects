@@ -31,6 +31,7 @@ class CState(object):
         next_m, next_v, r, terminal = env_random_step()
         if self.terminal:
             next_s = CState(next_v, r, terminal, [next_m])
+            # self.terminal = False
         else:
             next_s = CState(next_v, r, terminal, self.moves + [next_m])
         return next_s
@@ -42,10 +43,8 @@ class CState(object):
         while next_s.terminal is False:
             next_s = next_s.next_state()
             sum_reward += next_s.reward
-        env.render(0.01)
-        env.reset(init_state)
-        self.terminal = False
-        # raise Exception("State is terminal!")
+        env.render(0.001)
+        obser = env.reset(init_state)
         return sum_reward
 
     def __hash__(self):
@@ -85,8 +84,8 @@ class CNode(object):
 
     def __repr__(self):
         # __repr__() is What to show when we print a sample of this class.
-        s = "Node: children: {0} | visits: {1} | reward: {2}"\
-            .format(len(self.children), self.visits, self.cstate.reward)
+        s = "Node: children: {0} | visits: {1} | reward: {2} | moves: {3}"\
+            .format(len(self.children), self.visits, self.cstate.reward, self.cstate.moves)
         return s
 
 
@@ -95,6 +94,7 @@ def explore(node):
     tried_children = [c.cstate for c in node.children]
     new_state = node.cstate.next_state()
     while new_state in tried_children:
+        env.reset(init_state)
         new_state = node.cstate.next_state()
     node.add_child(new_state)
     return node.children[-1]
@@ -140,6 +140,8 @@ def tree_policy(node):
                 return explore(node)
             else:
                 return best_child(node, SCALAR)
+    if node.cstate.terminal is True:
+        return None
 
 
 def backup(node, reward):
@@ -157,7 +159,7 @@ def env_random_step():
     """ Adopt random action in the env. """
     # Signal so that we can clear useless trajectory once terminal in the hell.
     # clear_trajectory = False
-    env.render(0.01)
+    env.render(0.001)
     a = random.choice(MOVES)
     s_, r, terminal, info = env.step(a)
     # if terminal:
@@ -178,27 +180,35 @@ def uct_search(num_sims, root):
     # Sampling to get accurate rewards for every nodes.
     for iter in range(int(num_sims)):
         selected_node = tree_policy(root)
+        assert selected_node is not None
         reward = selected_node.cstate.next_reward()
         backup(selected_node, reward)
     # fully exploit to get the best child node.
     print("iteration over!")
-    return best_child(root, scalar=0)
+    best_node = best_child(root, scalar=0)
+    return best_node
 
 
 def update_maze_terminal(state):
     """ Determine whether we have solve the env. """
-    terminal_state = np.asarray([0, 0, -1, 0, 0, 0, -1, 0, 1])
+    terminal_state_1 = np.asarray([0, 0, -1, 0, 0, 0, -1, 0, 1])
+    terminal_state_2 = np.asarray([0, 0, 1, 0, 0, 0, -1, 0, 2])
+    terminal_state_3 = np.asarray([0, 0, -1, 0, 0, 0, 1, 0, 2])
     # terminal_state = np.asarray([0, 1, -1, 0, 0, 0, -1, 0, 2])
     # term_a = list(map(int, state.ravel()))
     # term_b = terminal_state.ravel().tolist()
-    if list(map(int, state.ravel())) == terminal_state.ravel().tolist():
+    if list(map(int, state.ravel())) == terminal_state_1.ravel().tolist():
+        return True
+    elif list(map(int, state.ravel())) == terminal_state_2.ravel().tolist():
+        return True
+    elif list(map(int, state.ravel())) == terminal_state_3.ravel().tolist():
         return True
     else:
         return False
 
 
 def run_maze():
-    num_sims = 100  # Number of simulations to run.
+    num_sims = 500  # Number of simulations to run.
     global init_state
     init_state = [[0, 0]]
 
@@ -207,26 +217,37 @@ def run_maze():
     current_node = CNode(CState(observation))
     maze_terminal = False
 
-    while not maze_terminal:
-        # player's position of the current root state.
-        row_column = np.where(current_node.cstate.state == 1)
-        init_state = [[int(row_column[0]), int(row_column[1])]]
-        print("init_state: {0}".format(init_state))
+    for epoch in range(10):
+        print("\n============= epoch {} =============".format(epoch))
+        while not maze_terminal:
+            # player's position of the current root state.
+            term = current_node.cstate.state
+            row_column = np.where(term == 1)
+            init_state = [[int(row_column[1]), int(row_column[0])]]
+            current_observation = env.reset(init_state)
+            assert np.where(current_observation == 1) == np.where(term == 1)
+            print("init_state: {0}".format(init_state))
 
-        # # Make sure the env.s equals to current_node.cstate.state
-        # if len(current_node.cstate.moves) != 0:
-        #     for a in current_node.cstate.moves:
-        #         env.step(a)
+            # # Make sure the env.s equals to current_node.cstate.state
+            # if len(current_node.cstate.moves) != 0:
+            #     for a in current_node.cstate.moves:
+            #         env.step(a)
 
-        print("Current node: \n{0}".format(current_node.cstate.state))
-        current_node = uct_search(num_sims, current_node)
-        print("Number of children: {0}".format(len(current_node.parent.children)))
-        for i, c in enumerate(current_node.children):
-            print(i, c)
-        print("Best child: {0}".format(current_node.cstate))
-        print("Best child: \n{0}".format(current_node.cstate.state))
-        print("-----------------------------------------")
-        maze_terminal = update_maze_terminal(current_node.cstate.state)
+            print("Current node: \n{0}".format(current_node.cstate.state))
+            current_node = uct_search(num_sims, current_node)
+            print("Number of children: {0}".format(len(current_node.parent.children)))
+            for i, c in enumerate(current_node.parent.children):
+                print(i, c)
+            print("Best child: {0}".format(current_node.cstate))
+            print("Best child: \n{0}".format(current_node.cstate.state))
+            print("-----------------------------------------")
+            maze_terminal = update_maze_terminal(current_node.cstate.state)
+
+        init_state = [[0, 0]]
+        obser = env.reset(init_state)
+        while current_node.parent is not None:
+            current_node = current_node.parent
+        maze_terminal = False
 
     # MCTS sampling over & find the best trajectory.
     print("MCTS sampling over")
@@ -236,6 +257,12 @@ def run_maze():
         current_node = current_node.parent
 
     while len(current_node.children) != 0:
+        # player's position of the current root state.
+        row_column = np.where(current_node.cstate.state == 1)
+        init_state = [[int(row_column[1]), int(row_column[0])]]
+        env.reset(init_state)
+        print("init_state: {0}".format(init_state))
+
         print("Current node: \n{0}".format(current_node.cstate.state))
         current_node = best_child(current_node, scalar=0)
         # print("Number of children: {0}".format(len(current_node.children)))
