@@ -10,46 +10,50 @@ import hashlib
 
 from env.maze import Maze
 
-# MCTS scalar: exploitation_value + scalar \times exploration_value
+# MCTS scalar: exploitation_value + scalar * exploration_value
 SCALAR = 1 / math.sqrt(2.0)
 MOVES = [0, 1, 2, 3]  # up, down, left, right.
 NUM_MOVES = len(MOVES)
+RENDER_T = 0.001
 
 
 class CState(object):
-    def __init__(self, state, reward=0, terminal=False, moves=None):
+    def __init__(self, state, reward=0, terminal=False, trajectory=None):
         self.state = state
         self.reward = reward
         self.terminal = terminal
-        if moves is None:
-            self.moves = []
+        if trajectory is None:
+            self.trajectory = []
         else:
-            self.moves = moves
+            self.trajectory = trajectory
 
-    def next_state(self):
-        # next_m, next_v, r, terminal, clear_traj = env_random_step()
-        next_m, next_v, r, terminal = env_random_step()
+    def next_state(self, action=None):
+        if action is None:
+            next_m, next_v, r, terminal = env_random_step()
+        else:
+            next_m, next_v, r, terminal = env_random_step(action)
+
         if self.terminal:
             next_s = CState(next_v, r, terminal, [next_m])
             # self.terminal = False
         else:
-            next_s = CState(next_v, r, terminal, self.moves + [next_m])
+            next_s = CState(next_v, r, terminal, self.trajectory + [next_m])
         return next_s
 
     def next_reward(self):
-        """ Return the reward of next_state. """
+        """ Return the sum of following rewards until terminal. """
         next_s = self.next_state()
         sum_reward = next_s.reward
         while next_s.terminal is False:
             next_s = next_s.next_state()
             sum_reward += next_s.reward
-        env.render(0.001)
+        env.render(RENDER_T)
         obser = env.reset(init_state)
         return sum_reward
 
     def __hash__(self):
         # hashlib.md5().hexdigest() => get the hexadecimal digest of the strings fed to it.
-        return int(hashlib.md5(str(self.moves).encode('utf-8')).hexdigest(), 16)
+        return int(hashlib.md5(str(self.trajectory).encode('utf-8')).hexdigest(), 16)
 
     def __eq__(self, other):
         if hash(self) == hash(other):
@@ -57,15 +61,15 @@ class CState(object):
         return False
 
     def __repr__(self):
-        s = "Value: {0} | Reward: {1} | Terminal: {2} | Moves: {3}".\
-            format(self.state.ravel(), self.reward, self.terminal, self.moves)
+        s = "Value: {0} | Reward: {1} | Terminal: {2} | trajectory: {3}".\
+            format(self.state.ravel(), self.reward, self.terminal, self.trajectory)
         return s
 
 
 class CNode(object):
     def __init__(self, cstate, parent=None):
         self.visits = 0  # how many times this note is visited.
-        self.cstate = cstate
+        self.cstate = cstate  # CState class
         self.children = []
         self.parent = parent
 
@@ -84,8 +88,8 @@ class CNode(object):
 
     def __repr__(self):
         # __repr__() is What to show when we print a sample of this class.
-        s = "Node: children: {0} | visits: {1} | reward: {2} | moves: {3}"\
-            .format(len(self.children), self.visits, self.cstate.reward, self.cstate.moves)
+        s = "Node: children: {0} | visits: {1} | reward: {2} | Last move: {3}"\
+            .format(len(self.children), self.visits, self.cstate.reward, self.cstate.trajectory[-1])
         return s
 
 
@@ -108,11 +112,13 @@ def best_child(node, scalar):
         exploit_v = c.cstate.reward / c.visits
         explore_v = math.sqrt(2.0 * math.log(node.visits) / float(c.visits))
         score = exploit_v + scalar * explore_v  # the most vanilla MCTS formula.
+
         if score == best_score:
             best_children.append(c)
         if score > best_score:
             best_children = [c]
             best_score = score
+
     if len(best_children) == 0:
         raise Exception("OOPS: no best child found, probably fatal.")
     return random.choice(best_children)
@@ -155,19 +161,14 @@ def backup(node, reward):
         node = node.parent
 
 
-def env_random_step():
+def env_random_step(action=None):
     """ Adopt random action in the env. """
-    # Signal so that we can clear useless trajectory once terminal in the hell.
-    # clear_trajectory = False
-    env.render(0.001)
-    a = random.choice(MOVES)
+    env.render(RENDER_T)
+    if action is None:
+        a = random.choice(MOVES)
+    else:
+        a = action
     s_, r, terminal, info = env.step(a)
-    # if terminal:
-    #     env.render(0.01)
-    #     env.reset()
-    #     terminal = False
-    #     # clear_trajectory = True
-    # return a, s_, r, terminal, clear_trajectory
     return a, s_, r, terminal
 
 
@@ -190,11 +191,10 @@ def uct_search(num_sims, root):
 
 
 def update_maze_terminal(state):
-    """ Determine whether we have solve the env. """
+    """ Determine whether end the maze. """
     terminal_state_1 = np.asarray([0, 0, -1, 0, 0, 0, -1, 0, 1])
     terminal_state_2 = np.asarray([0, 0, 1, 0, 0, 0, -1, 0, 2])
     terminal_state_3 = np.asarray([0, 0, -1, 0, 0, 0, 1, 0, 2])
-    # terminal_state = np.asarray([0, 1, -1, 0, 0, 0, -1, 0, 2])
     # term_a = list(map(int, state.ravel()))
     # term_b = terminal_state.ravel().tolist()
     if list(map(int, state.ravel())) == terminal_state_1.ravel().tolist():
@@ -208,7 +208,7 @@ def update_maze_terminal(state):
 
 
 def run_maze():
-    num_sims = 500  # Number of simulations to run.
+    num_sims = 100  # Number of simulations to run.
     global init_state
     init_state = [[0, 0]]
 
@@ -220,18 +220,13 @@ def run_maze():
     for epoch in range(10):
         print("\n============= epoch {} =============".format(epoch))
         while not maze_terminal:
-            # player's position of the current root state.
+            # Reset player's initial position of the current root state.
             term = current_node.cstate.state
             row_column = np.where(term == 1)
             init_state = [[int(row_column[1]), int(row_column[0])]]
             current_observation = env.reset(init_state)
             assert np.where(current_observation == 1) == np.where(term == 1)
             print("init_state: {0}".format(init_state))
-
-            # # Make sure the env.s equals to current_node.cstate.state
-            # if len(current_node.cstate.moves) != 0:
-            #     for a in current_node.cstate.moves:
-            #         env.step(a)
 
             print("Current node: \n{0}".format(current_node.cstate.state))
             current_node = uct_search(num_sims, current_node)
