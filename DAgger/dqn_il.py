@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 from env.maze import Maze
-from DQN_brain import DeepQNetwork
-from utils import plot_cost, plot_rate, one_hot_encoding_numpy, get_batch
+from DQN_il_brain import DeepQNetwork
+from utils import plot_rate, one_hot_encoding_numpy, get_batch, write_to_file
 
 # Stimulated expert library.
 ACTION_UP = [[4, 2], [4, 3], [5, 0], [5, 2]]
@@ -31,7 +31,6 @@ def get_expert_action(obser):
 def init_model():
     n_features = env.height * env.width
     n_actions = 4
-    restore_path = None
     render_time = 0
 
     obser_list = []
@@ -61,25 +60,21 @@ def init_model():
     actions_all = actions_all[1:, :].astype(int)
     actions_all = one_hot_encoding_numpy(actions_all.ravel().tolist(), 4)
 
-    # # Training an initialized policy.
+    # # Training an initialized policy and store it.
     net_s = tf.placeholder(tf.float32, [None, n_features], name='net_s')  # observations
     net_a = tf.placeholder(tf.int32, [None, n_actions], name='net_a')  # expert actions
-
-    net_l1 = tf.contrib.layers.fully_connected(net_s, 32, activation_fn=tf.nn.relu)
-    # net_l2 = tf.contrib.layers.fully_connected(net_l1, 128, activation_fn=tf.nn.relu)
-    net_out = tf.contrib.layers.fully_connected(net_l1, n_actions, activation_fn=tf.nn.softmax)
+    with tf.variable_scope('net'):
+        with tf.variable_scope('l1'):
+            net_l1 = tf.contrib.layers.fully_connected(net_s, 32, activation_fn=tf.nn.relu)
+            # net_l2 = tf.contrib.layers.fully_connected(net_l1, 128, activation_fn=tf.nn.relu)
+        with tf.variable_scope('l2'):
+            net_out = tf.contrib.layers.fully_connected(net_l1, n_actions, activation_fn=tf.nn.softmax)
 
     net_loss = tf.losses.softmax_cross_entropy(onehot_labels=net_a, logits=net_out)  # compute cost
     train_op = tf.train.AdamOptimizer(0.001).minimize(net_loss)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver()
-        if restore_path is not None:
-            saver.restore(sess, restore_path)
-            print("Model restore in path: {}".format(restore_path))
-        else:
-            print("No pretrained model found.")
 
         for step in range(100):
             b_s, b_a = get_batch(obsers_all, actions_all, batch_size=32)
@@ -98,6 +93,10 @@ def init_model():
         accuracy_ = n_accuracy.shape[0] / actions_all.shape[0]
         print('Step:', step, '| train loss: %.4f' % loss_, '| test accuracy: %.2f' % accuracy_)
 
+        vars_list = [v for v in tf.global_variables()]
+        write_to_file('./logs/dqn_il/model/vars_list.txt', vars_list, True)
+
+        saver = tf.train.Saver()
         save_path = saver.save(sess, './logs/dqn_il/model/model_init.ckpt')
         print("Model saved in path: {}".format(save_path))
 
@@ -106,7 +105,7 @@ def init_model():
 
 def run_maze():
     step = 0
-    render_time = 0
+    render_time = 0.1
     max_episodes = 1500
     episode_step_holder = []
     success_holder = []
@@ -124,7 +123,7 @@ def run_maze():
             # print('action:{0} | reward:{1} | done: {2}'.format(action, reward, done))
             RL.store_transition(s, action, reward, s_)
 
-            if step > 200:
+            if i_episode > 10:
                 RL.learn(done)
 
             s = s_
@@ -159,23 +158,44 @@ def run_maze():
 
 
 def enter_dqn_il():
-    pass
+    global env, RL
+    env = Maze('./env/maps/map3.json', full_observation=True)
+    save_path = init_model()
+    tf.reset_default_graph()
+    RL = DeepQNetwork(
+        n_actions=4,
+        n_features=env.height * env.width,
+        restore_path=save_path,
+        learning_rate=0.001,
+        reward_decay=0.9,
+        e_greedy=0.95,
+        replace_target_iter=3000,
+        batch_size=64,
+        # e_greedy_init=0.9,
+        e_greedy_init=0,
+        # e_greedy_increment=None,
+        e_greedy_increment=1e-3,
+        output_graph=False,
+    )
+    env.after(100, run_maze)
+    env.mainloop()
 
 
 def main():
     global env, RL
     env = Maze('./env/maps/map3.json', full_observation=True)
     save_path = init_model()
+    tf.reset_default_graph()
     RL = DeepQNetwork(
         n_actions=4,
         n_features=env.height*env.width,
         restore_path=save_path,
-        # restore_path=base_path + 'model_dqn.ckpt',
         learning_rate=0.001,
         reward_decay=0.9,
         e_greedy=0.95,
         replace_target_iter=3000,
         batch_size=64,
+        # e_greedy_init=0.9,
         e_greedy_init=0,
         # e_greedy_increment=None,
         e_greedy_increment=1e-3,

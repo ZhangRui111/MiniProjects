@@ -47,34 +47,54 @@ class DeepQNetwork:
             tf.summary.FileWriter('./logs/double_dqn/', self.sess.graph)
 
         if restore_path is not None:
-            self.saver.restore(self.sess, restore_path)
+            vars_list = [v for v in tf.trainable_variables()]
+            print(len(vars_list))
+            print(vars_list)
+            restore_vars_dict_e = {
+                "net/l1/fully_connected/weights": vars_list[0],
+                "net/l1/fully_connected/biases": vars_list[1],
+                "net/l2/fully_connected/weights": vars_list[2],
+                "net/l2/fully_connected/biases": vars_list[3],
+            }
+            saver_e = tf.train.Saver(restore_vars_dict_e)
+            saver_e.restore(self.sess, restore_path)
+            # restore weights under the `target_net` namescope [optional].
+            restore_vars_dict_t = {
+                "net/l1/fully_connected/weights": vars_list[4],
+                "net/l1/fully_connected/biases": vars_list[5],
+                "net/l2/fully_connected/weights": vars_list[6],
+                "net/l2/fully_connected/biases": vars_list[7],
+            }
+            saver_t = tf.train.Saver(restore_vars_dict_t)
+            saver_t.restore(self.sess, restore_path)
             print("Model restore in path: {}".format(restore_path))
+        else:
+            print("No pretrained model found.")
 
         self.cost_his = []
 
     def _build_net(self):
-        def build_layers(s, n_l1):
-            with tf.variable_scope('l1'):
-                l1 = tf.contrib.layers.fully_connected(s, n_l1, activation_fn=tf.nn.relu)
-
-            with tf.variable_scope('l2'):
-                out = tf.contrib.layers.fully_connected(l1, self.n_actions, activation_fn=tf.nn.softmax)
-            return out
         # ------------------ build evaluate_net ------------------
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')  # input
         self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss
 
         with tf.variable_scope('eval_net'):
-            self.q_eval = build_layers(self.s, 32)
+            with tf.variable_scope('l1'):
+                l1 = tf.contrib.layers.fully_connected(self.s, 32, activation_fn=tf.nn.relu)
+            with tf.variable_scope('l2'):
+                self.q_eval = tf.contrib.layers.fully_connected(l1, self.n_actions, activation_fn=tf.nn.softmax)
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
         with tf.variable_scope('train'):
-            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+            self._train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            self.q_next = build_layers(self.s_, 32)
+            with tf.variable_scope('l1'):
+                l1 = tf.contrib.layers.fully_connected(self.s_, 32, activation_fn=tf.nn.relu)
+            with tf.variable_scope('l2'):
+                self.q_next = tf.contrib.layers.fully_connected(l1, self.n_actions, activation_fn=tf.nn.softmax)
 
     def store_transition(self, s, a, r, s_):
         if not hasattr(self, 'memory_counter'):

@@ -85,12 +85,12 @@ class DDQN:
         self.memory_counter += 1
 
     def choose_action(self, observation):
-        observation = observation[np.newaxis, :]
-        actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
-        action = np.argmax(actions_value)
-
         if np.random.uniform() > self.epsilon:  # choosing action
             action = np.random.randint(0, self.n_actions)
+        else:
+            observation = observation[np.newaxis, :]
+            actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+            action = np.argmax(actions_value)
         return action
 
     def learn(self, done):

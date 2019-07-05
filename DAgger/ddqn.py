@@ -1,7 +1,7 @@
 from env.maze import Maze
 from DDQN_brain import DDQN
 
-from utils import plot_cost, plot_rate
+from utils import plot_rate
 
 
 def run_maze():
