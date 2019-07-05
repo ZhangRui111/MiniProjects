@@ -46,7 +46,8 @@ def run_maze():
         # # ----------------------- 1 ----------------------- # #
         # Get all the variables in the graph as a list.         #
         # # ----------------------- 1 ----------------------- # #
-        vars_list = [v for v in tf.global_variables()]
+        # vars_list = [v for v in tf.global_variables()]
+        vars_list = [v for v in tf.trainable_variables()]
         print(vars_list)
         print(vars_list[0].name)
         print(vars_list[0].shape)
@@ -58,8 +59,8 @@ def run_maze():
         # All variables' name or other graph keys must be found #
         # from the checkpoint.                                  #
         # # ----------------------- 5 ----------------------- # #
-        saver = tf.train.Saver()
-        saver.restore(sess, './logs/model_1/model_init.ckpt')
+        # saver = tf.train.Saver()
+        # saver.restore(sess, './logs/model_1/model_init.ckpt')
         # # ----------------------- 5 ----------------------- # #
         # print("Model restore in path: {}".format('./logs/model_1/model_init.ckpt'))
 
@@ -96,10 +97,10 @@ def run_maze():
         saver_e.restore(sess, './logs/model_1/model_init.ckpt')
         # restore weights under the `target_net` namescope [optional].
         restore_vars_dict_t = {
-            "net/l1/fully_connected/weights": vars_list[12],
-            "net/l1/fully_connected/biases": vars_list[13],
-            "net/l2/fully_connected/weights": vars_list[14],
-            "net/l2/fully_connected/biases": vars_list[15],
+            "net/l1/fully_connected/weights": vars_list[4],
+            "net/l1/fully_connected/biases": vars_list[5],
+            "net/l2/fully_connected/weights": vars_list[6],
+            "net/l2/fully_connected/biases": vars_list[7],
         }
         saver_t = tf.train.Saver(restore_vars_dict_t)
         saver_t.restore(sess, './logs/model_1/model_init.ckpt')

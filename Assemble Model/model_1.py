@@ -1,5 +1,6 @@
 """
 Save the initialized model for further use/assemble.
+This example is illustrated by DAgger algorithm.
 """
 import numpy as np
 import tensorflow as tf

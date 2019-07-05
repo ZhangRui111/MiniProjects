@@ -8,3 +8,7 @@ of the three-layer model.
 ## How to run
 1. run `model_1.py` to save the initialized model for further use/assemble.
 2. run `main.py`.
+
+## Todo list
+- [ ] Restore weights in a more automatic way 
+(Restore a large model, such as VggNet, in a variable dictionary way is so hard).
