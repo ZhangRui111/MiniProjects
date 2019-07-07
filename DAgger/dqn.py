@@ -7,7 +7,7 @@ from utils import plot_rate
 def run_maze():
     step = 0
     render_time = 0
-    max_episodes = 1500
+    max_episodes = 5000
     episode_step_holder = []
     success_holder = []
     base_path = './logs/dqn/model/'
@@ -35,12 +35,15 @@ def run_maze():
                 done = True
 
             if done:
-                print('{0} -- {1} -- {2}'.format(i_episode, info, episode_step))
+                print('{0} -- {1} -- {2} -- {3}'.format(i_episode, info, episode_step, RL.epsilon))
                 if info == 'running':
                     episode_step = 300
                     success_holder.append(0)
                 elif info == 'terminal':
-                    success_holder.append(1)
+                    if episode_step < 50:
+                        success_holder.append(1)
+                    else:
+                        success_holder.append(1)
                 else:
                     raise Exception("Invalid info code.")
                 env.render(render_time)
@@ -55,29 +58,7 @@ def run_maze():
     env.destroy()
 
     # plot_cost(episode_step_holder, base_path + 'episode_steps.png')
-    plot_rate(success_holder, base_path, index=15)
-
-
-def enter_dqn():
-    global env, RL
-    env = Maze('./env/maps/map3.json', full_observation=True)
-    RL = DeepQNetwork(
-        n_actions=4,
-        n_features=env.height * env.width,
-        restore_path=None,
-        # restore_path=base_path + 'model_dqn.ckpt',
-        learning_rate=0.001,
-        reward_decay=0.9,
-        e_greedy=0.95,
-        replace_target_iter=3000,
-        batch_size=64,
-        e_greedy_init=0,
-        # e_greedy_increment=None,
-        e_greedy_increment=1e-3,
-        output_graph=False,
-    )
-    env.after(100, run_maze)
-    env.mainloop()
+    plot_rate(success_holder, base_path, index=0)
 
 
 def main():
@@ -88,10 +69,10 @@ def main():
         n_features=env.height * env.width,
         restore_path=None,
         # restore_path=base_path + 'model_dqn.ckpt',
-        learning_rate=0.001,
+        learning_rate=0.00001,
         reward_decay=0.9,
         e_greedy=0.95,
-        replace_target_iter=3000,
+        replace_target_iter=4e4,
         batch_size=64,
         e_greedy_init=0,
         # e_greedy_increment=None,

@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from env.maze import Maze
-from utils import get_batch, one_hot_encoding_numpy
+from utils import get_batch, one_hot_encoding_numpy, plot_rate
 
 
 # Stimulated expert library.
@@ -34,11 +34,13 @@ def get_expert_action(obser):
 
 
 def run_maze():
-    expert_counter = 0  # Record how many times we refer the expert action.
+    # expert_counter = 0  # Record how many times we refer the expert action.
     n_features = env.height * env.width
     n_actions = 4
     restore_path = None
     dagger_itr = 5  # how many times we do dataset aggregation.
+    episode_step_holder = []
+    success_holder = []
 
     obser_list = []
     action_list = []
@@ -127,6 +129,7 @@ def run_maze():
                 raise Exception("No pretrained model found.")
 
             for j in range(RUN_STEPS):
+                episode_step = 0
                 s = env.reset()
                 while True:
                     env.render(RENDER_TIME)
@@ -135,10 +138,27 @@ def run_maze():
                     obser_list.append(s.ravel())
                     action_list.append(get_expert_action(s))  # add action what the expert teaches.
                     s_, r, done, info = env.step(a)  # act action what the model output.
-                    if done:
-                        env.render(RENDER_TIME)
-                        break
+
                     s = s_
+                    episode_step += 1
+
+                    if episode_step > 299:
+                        done = True
+
+                    if done:
+                        if info == 'running':
+                            episode_step = 300
+                            success_holder.append(0)
+                        elif info == 'terminal':
+                            if episode_step < 50:
+                                success_holder.append(1)
+                            else:
+                                success_holder.append(1)
+                        else:
+                            raise Exception("Invalid info code.")
+                        env.render(RENDER_TIME)
+                        episode_step_holder.append(episode_step)
+                        break
 
             assert len(obser_list) == len(action_list)
             for obser, act in zip(obser_list, action_list):
@@ -173,6 +193,8 @@ def run_maze():
 
             save_path = saver.save(sess, BASE_LOGS + 'model_{}.ckpt'.format(i))
             print("Model saved in path: {}".format(save_path))
+
+    plot_rate(success_holder, './logs/dagger/model/', index=0)
 
     # # Testing the final policy.
     with tf.Session() as sess:

@@ -66,8 +66,8 @@ def plot_cost(data, path):
 def plot_rate(data, path, index):
     data_average = []
     size = len(data)
-    for i in range(25, size):
-        data_average.append(sum(data[(i-25):i])/25)
+    for i in range(50, size):
+        data_average.append(sum(data[(i-50):i])/50)
 
     np.save('{0}data_average_{1}'.format(path, index), np.array(data_average))
     np.save('{0}data_{1}'.format(path, index), np.array(data))
@@ -116,30 +116,30 @@ def plot_rate_average(basepath, color_bg, color_fg):
 
 
 def plot_cmp(clip=False):
-    dqn_line = np.load('./logs/backup/dqn/mean_result.npy')
-    double_dqn_line = np.load('./logs/backup/double_dqn/mean_result.npy')
-    dueling_dqn_line = np.load('./logs/backup/dueling_dqn/mean_result.npy')
+    dqn_line = np.load('./logs/dqn/model/data_average_0.npy')
+    dqn_il_line = np.load('./logs/dqn_il/model/data_average_15.npy')
+    # dueling_dqn_line = np.load('./logs/backup/dueling_dqn/mean_result.npy')
 
     # print('dqn -- {}'.format(np.mean(dqn_line[300:])))
     # print('double dqn -- {}'.format(np.mean(double_dqn_line[300:])))
     # print('dueling dqn -- {}'.format(np.mean(dueling_dqn_line[300:])))
 
     if clip:
-        plt.plot(np.arange(len(dqn_line[:200])), dqn_line[:200], c='xkcd:black', label='dqn')
-        plt.plot(np.arange(len(double_dqn_line[:200])), double_dqn_line[:200], c='xkcd:green', label='double_dqn')
-        plt.plot(np.arange(len(dueling_dqn_line[:200])), dueling_dqn_line[:200], c='xkcd:red', label='dueling_dqn')
+        plt.plot(np.arange(len(dqn_line[:1000])), dqn_line[:1000], c='xkcd:blue', label='dqn')
+        plt.plot(np.arange(len(dqn_il_line[:1000])), dqn_il_line[:1000], c='xkcd:red', label='dqn_il')
+        # plt.plot(np.arange(len(dueling_dqn_line[:200])), dueling_dqn_line[:200], c='xkcd:red', label='dueling_dqn')
     else:
-        plt.plot(np.arange(len(dqn_line)), dqn_line, c='xkcd:black', label='dqn')
-        plt.plot(np.arange(len(double_dqn_line)), double_dqn_line, c='xkcd:green', label='double_dqn')
-        plt.plot(np.arange(len(dueling_dqn_line)), dueling_dqn_line, c='xkcd:red', label='dueling_dqn')
+        plt.plot(np.arange(len(dqn_line)), dqn_line, c='xkcd:blue', label='dqn')
+        plt.plot(np.arange(len(dqn_il_line)), dqn_il_line, c='xkcd:red', label='dqn_il')
+        # plt.plot(np.arange(len(dueling_dqn_line)), dueling_dqn_line, c='xkcd:red', label='dueling_dqn')
     plt.ylabel('success rate')
     plt.xlabel('episode')
     plt.legend(loc='best')
     # plt.show()
     if clip:
-        plt.savefig('./logs/backup/success_rate_clip.png')
+        plt.savefig('./logs/success_rate_clip.png')
     else:
-        plt.savefig('./logs/backup/success_rate.png')
+        plt.savefig('./logs/success_rate.png')
     plt.close()
 
 
@@ -147,7 +147,7 @@ def main():
     # plot_rate_average('./logs/backup/dqn/', 'xkcd:silver', 'xkcd:black')
     # plot_rate_average('./logs/backup/double_dqn/', 'xkcd:yellowgreen', 'xkcd:green')
     # plot_rate_average('./logs/backup/dueling_dqn/', 'xkcd:gold', 'xkcd:red')
-    plot_cmp(clip=True)
+    plot_cmp(clip=False)
 
 
 if __name__ == '__main__':

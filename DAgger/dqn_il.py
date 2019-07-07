@@ -32,6 +32,7 @@ def init_model():
     n_features = env.height * env.width
     n_actions = 4
     render_time = 0
+    base_path = './logs/dqn_il/model/'
 
     obser_list = []
     action_list = []
@@ -39,7 +40,7 @@ def init_model():
     actions_all = np.zeros((1, 1))
 
     # # Collecting data.
-    for j in range(200):
+    for j in range(500):
         s = env.reset()
         while True:
             env.render(render_time)
@@ -76,7 +77,7 @@ def init_model():
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        for step in range(100):
+        for step in range(500):
             b_s, b_a = get_batch(obsers_all, actions_all, batch_size=32)
             _, loss_ = sess.run([train_op, net_loss], {net_s: b_s, net_a: b_a})
 
@@ -94,10 +95,10 @@ def init_model():
         print('Step:', step, '| train loss: %.4f' % loss_, '| test accuracy: %.2f' % accuracy_)
 
         vars_list = [v for v in tf.global_variables()]
-        write_to_file('./logs/dqn_il/model/vars_list.txt', vars_list, True)
+        write_to_file(base_path + 'vars_list.txt', vars_list, True)
 
         saver = tf.train.Saver()
-        save_path = saver.save(sess, './logs/dqn_il/model/model_init.ckpt')
+        save_path = saver.save(sess, base_path + 'model_init.ckpt')
         print("Model saved in path: {}".format(save_path))
 
         return save_path
@@ -105,8 +106,8 @@ def init_model():
 
 def run_maze():
     step = 0
-    render_time = 0.1
-    max_episodes = 1500
+    render_time = 0
+    max_episodes = 5000
     episode_step_holder = []
     success_holder = []
     base_path = './logs/dqn_il/model/'
@@ -134,12 +135,15 @@ def run_maze():
                 done = True
 
             if done:
-                print('{0} -- {1} -- {2}'.format(i_episode, info, episode_step))
+                print('{0} -- {1} -- {2} -- {3}'.format(i_episode, info, episode_step, RL.epsilon))
                 if info == 'running':
                     episode_step = 300
                     success_holder.append(0)
                 elif info == 'terminal':
-                    success_holder.append(1)
+                    if episode_step < 50:
+                        success_holder.append(1)
+                    else:
+                        success_holder.append(1)
                 else:
                     raise Exception("Invalid info code.")
                 env.render(render_time)
@@ -154,31 +158,7 @@ def run_maze():
     env.destroy()
 
     # plot_cost(episode_step_holder, base_path + 'episode_steps.png')
-    plot_rate(success_holder, base_path, index=15)
-
-
-def enter_dqn_il():
-    global env, RL
-    env = Maze('./env/maps/map3.json', full_observation=True)
-    save_path = init_model()
-    tf.reset_default_graph()
-    RL = DeepQNetwork(
-        n_actions=4,
-        n_features=env.height * env.width,
-        restore_path=save_path,
-        learning_rate=0.001,
-        reward_decay=0.9,
-        e_greedy=0.95,
-        replace_target_iter=3000,
-        batch_size=64,
-        # e_greedy_init=0.9,
-        e_greedy_init=0,
-        # e_greedy_increment=None,
-        e_greedy_increment=1e-3,
-        output_graph=False,
-    )
-    env.after(100, run_maze)
-    env.mainloop()
+    plot_rate(success_holder, base_path, index=0)
 
 
 def main():
@@ -188,12 +168,12 @@ def main():
     tf.reset_default_graph()
     RL = DeepQNetwork(
         n_actions=4,
-        n_features=env.height*env.width,
+        n_features=env.height * env.width,
         restore_path=save_path,
-        learning_rate=0.001,
+        learning_rate=0.00001,
         reward_decay=0.9,
         e_greedy=0.95,
-        replace_target_iter=3000,
+        replace_target_iter=4e4,
         batch_size=64,
         # e_greedy_init=0.9,
         e_greedy_init=0,
