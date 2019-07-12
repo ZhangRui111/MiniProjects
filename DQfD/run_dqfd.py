@@ -54,7 +54,7 @@ def map_scores(dqfd_scores=None, ddqn_scores=None, xlabel=None, ylabel=None):
 
 def run_DQfD(index, env):
     with open(Config.DEMO_DATA_PATH, 'rb') as f:
-        demo_transitions = pickle.load(f)
+        demo_transitions = pickle.load(f, encoding='bytes')
         demo_transitions = deque(itertools.islice(demo_transitions, 0, Config.demo_buffer_size))
         assert len(demo_transitions) == Config.demo_buffer_size
     with tf.variable_scope('DQfD_' + str(index)):
@@ -172,8 +172,8 @@ if __name__ == '__main__':
     # ddqn_mean_scores = ddqn_sum_scores / Config.iteration
     # with open('./ddqn_mean_scores.p', 'wb') as f:
     #     pickle.dump(ddqn_mean_scores, f, protocol=2)
-    with open('./ddqn_mean_scores.p', 'rb') as f:
-        ddqn_mean_scores = pickle.load(f)
+    # with open('./ddqn_mean_scores.p', 'rb') as f:
+    #     ddqn_mean_scores = pickle.load(f)
     # ----------------------------- get DQfD scores --------------------------------
     dqfd_sum_scores = np.zeros(Config.episode)
     for i in range(Config.iteration):
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     with open('./dqfd_mean_scores.p', 'wb') as f:
         pickle.dump(dqfd_mean_scores, f, protocol=2)
 
-    map_scores(dqfd_scores=dqfd_mean_scores, ddqn_scores=ddqn_mean_scores,
-        xlabel='Red: dqfd         Blue: ddqn', ylabel='Scores')
-    env.close()
+    # map_scores(dqfd_scores=dqfd_mean_scores, ddqn_scores=ddqn_mean_scores,
+    #     xlabel='Red: dqfd         Blue: ddqn', ylabel='Scores')
+    # env.close()
     # gym.upload('/tmp/carpole_DDQN-1', api_key='sk_VcAt0Hh4RBiG2yRePmeaLA')
