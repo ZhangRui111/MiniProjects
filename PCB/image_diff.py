@@ -4,7 +4,7 @@ import cv2
 from skimage.measure import compare_ssim
 
 imageA_path = './images/icon.jpg'
-imageB_path = './images/icon_copy.jpg'
+imageB_path = './images/img_affine_large_recover.jpg'
 
 # Load the two input images.
 imageA = cv2.imread(imageA_path)
@@ -42,6 +42,7 @@ cv2.imshow("Original", imageA)
 cv2.imshow("Modified", imageB)
 cv2.imshow("Diff", diff)
 cv2.imshow("Thresh", thresh)
+cv2.imwrite("./logs/diff_thresh.jpg", thresh)
 # waitKey(): makes the program wait until a key is pressed
 # (at which point the script will exit).
 cv2.waitKey(0)

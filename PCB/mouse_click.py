@@ -17,7 +17,7 @@ def mouse_callback(event, x, y, flags, params):
         print("mouse right click")
         # # store the coordinates of the right-click event
         right_clicks.append([x, y])
-        # print(right_clicks)
+        print(right_clicks)
         # plot a circle. (img, (x, y), radius, (b, g, r), -1)
         cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
         cv2.imshow('image', img)

@@ -8,9 +8,9 @@ import numpy as np
 
 def get_M(trans_type, args_list):
     """
-    Get the Transformation Matrix H.
+    Get the Transformation Matrix M.
     Support four Transformation: translation, rotation, affine, perspective, shearing.
-    :return: H
+    :return: M
     """
     if trans_type == "Translation":
         # # args_list[0] -- t_x
@@ -72,8 +72,8 @@ def my_resize(img, interpolation=cv2.INTER_LINEAR, d_size=None, fx=None, fy=None
 
 
 def main():
-    img = cv2.imread('./images/icon.jpg')
-    # # ------------------- Scale -------------------- # #
+    img = cv2.imread('./images/img_affine_large.jpg')
+    # # ------------------ Scaling ------------------- # #
     # rows, cols = img.shape[:2]
     # my_resize(img, cv2.INTER_CUBIC, d_size=(2 * rows, 2 * cols))
 
@@ -82,19 +82,21 @@ def main():
     # # cv2.warpAffine(image, Transformation Matrix, size of image after Transformation)
     rows, cols = img.shape[:2]
     # rotation_args = [(rows/2, cols/2), 45, 1]
-    # affine_args = [np.float32([[50, 50], [200, 50], [50, 200]]),
-    #                np.float32([[10, 100], [200, 50], [100, 250]])]
-    perspective_args = [np.float32([[56, 65], [238, 52], [28, 237], [239, 240]]),
-                        np.float32([[0, 0], [200, 0], [0, 200], [200, 200]])]
-    H = get_M("Perspective", perspective_args)
-    # res = cv2.warpAffine(img, H, (rows * 2, cols))
-    # res = cv2.warpAffine(img, H, (rows, cols * 3))
-    # res = cv2.warpAffine(img, H, (rows * 2, cols * 2))
-    res = cv2.warpPerspective(img, H, (rows, cols))
+    # affine_args = [np.float32([[122, 50], [58, 92], [153, 92]]),
+    #                np.float32([[97, 76], [44, 140], [166, 107]])]
+    reverse_affine_args = [np.float32([[97, 76], [44, 140], [166, 107]]),
+                           np.float32([[122, 50], [58, 92], [153, 92]])]
+    # perspective_args = [np.float32([[56, 65], [238, 52], [28, 237], [239, 240]]),
+    #                     np.float32([[0, 0], [200, 0], [0, 200], [200, 200]])]
+    M = get_M("Affine", reverse_affine_args)
+    # res = cv2.warpAffine(img, M, (rows * 2, cols * 2))
+    # res = cv2.warpAffine(img, M, (rows, cols))
+    res = cv2.warpAffine(img, M, (int(rows/2), int(cols/2)))
+    # res = cv2.warpPerspective(img, H, (rows, cols))
     cv2.imshow('img', img)
     cv2.imshow('res', res)
     # cv2.imwrite('./logs/img_.jpg', img)
-    cv2.imwrite('./images/img_rotation.jpg', res)
+    cv2.imwrite('./images/img_affine_large_recover.jpg', res)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
