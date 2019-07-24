@@ -80,7 +80,7 @@ def main():
     # # --------------- Transformation --------------- # #
     # # Translation, Rotation, Affine, Perspective, Shearing.
     # # cv2.warpAffine(image, Transformation Matrix, size of image after Transformation)
-    rows, cols = img.shape[:2]
+    x, y = img.shape[:2]
     # rotation_args = [(rows/2, cols/2), 45, 1]
     # affine_args = [np.float32([[122, 50], [58, 92], [153, 92]]),
     #                np.float32([[97, 76], [44, 140], [166, 107]])]
@@ -91,8 +91,8 @@ def main():
     M = get_M("Affine", reverse_affine_args)
     # res = cv2.warpAffine(img, M, (rows * 2, cols * 2))
     # res = cv2.warpAffine(img, M, (rows, cols))
-    res = cv2.warpAffine(img, M, (int(rows/2), int(cols/2)))
-    # res = cv2.warpPerspective(img, H, (rows, cols))
+    res = cv2.warpAffine(img, M, (int(x/2), int(y/2)))
+    # res = cv2.warpPerspective(img, M, (rows, cols))
     cv2.imshow('img', img)
     cv2.imshow('res', res)
     # cv2.imwrite('./logs/img_.jpg', img)

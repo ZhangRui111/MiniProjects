@@ -21,7 +21,7 @@ def mouse_callback(event, x, y, flags, params):
         # plot a circle. (img, (x, y), radius, (b, g, r), -1)
         cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
         cv2.imshow('image', img)
-        cv2.imwrite('./logs/img_clicks.jpg', img)
+        cv2.imwrite('./logs/pcb_a_c_click.png', img)
     elif event == cv2.EVENT_LBUTTONDBLCLK:
         print("mouse left double click")
     elif event == cv2.EVENT_RBUTTONDBLCLK:
@@ -36,7 +36,7 @@ def main():
     # print(events)
     global img, right_clicks
     right_clicks = list()
-    img = cv2.imread('./images/icon.jpg')
+    img = cv2.imread('./logs/pcb_a_c.png')
 
     window_width = int(img.shape[1])
     window_height = int(img.shape[0])

@@ -1,3 +1,6 @@
+"""
+Compute the Structural Similarity Index (SSIM) between the two images.
+"""
 import imutils
 import cv2
 
