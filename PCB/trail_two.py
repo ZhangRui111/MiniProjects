@@ -98,8 +98,8 @@ def img_processing():
 def main():
     # img_transformation()
     # img_processing()
-    img_a = cv2.imread('./logs/pcb_a2b_c_g.png')
-    img_b = cv2.imread('./logs/pcb_b2b_c_g.png')
+    img_a = cv2.imread('./logs/trial_two/pcb_a2b_c_g.png')
+    img_b = cv2.imread('./logs/trial_two/pcb_b2b_c_g.png')
     # img_a = cv2.imread('./images/icon.jpg')
     # img_b = cv2.imread('./images/icon_copy.jpg')
 
@@ -112,10 +112,10 @@ def main():
     # img_a_g = img_a_g[970:1050, 85:125]  # similar part.
 
     # # Construct a SIFT object with optional different thresholds.
-    # sift = cv2.xfeatures2d.SIFT_create(contrastThreshold=100, edgeThreshold=0)
+    # sift = cv2.xfeatures2d.SIFT_create(contrastThreshold=0.01, edgeThreshold=10)
     # sift = cv2.xfeatures2d.SIFT_create(contrastThreshold=0)
     sift = cv2.xfeatures2d.SIFT_create()
-
+    #
     # # directly find keypoints and descriptors in a single step.
     kp_a, des_a = sift.detectAndCompute(img_a_g, None)
     kp_b, des_b = sift.detectAndCompute(img_b_g, None)
@@ -134,12 +134,12 @@ def main():
     # # Draw first 10 matches. flag is 0, 1, 2 or 4.
     img_match = cv2.drawMatches(img_a_g, kp_a, img_b_g, kp_b, matches[:10], outImg=1, flags=2)
 
-    # cv2.imshow('img_a', img_a_g_d)
-    # cv2.imshow('img_b', img_b_g_d)
-    cv2.imshow('match', img_match)
+    cv2.imshow('img_a', img_a_g_d)
+    cv2.imshow('img_b', img_b_g_d)
+    # cv2.imshow('match', img_match)
     # cv2.imwrite('./logs/img_a_g_d.png', img_a_g_d)
     # cv2.imwrite('./logs/img_d_g_d.png', img_b_g_d)
-    cv2.imwrite('./logs/test_match.png', img_match)
+    cv2.imwrite('./logs/trial_two/test_match.png', img_match)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
