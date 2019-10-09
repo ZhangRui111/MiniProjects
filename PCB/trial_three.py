@@ -103,8 +103,12 @@ def main():
             patch_a = pcb_a_g[i * row_stride:(i + 1) * row_stride, j * col_stride:(j + 1) * col_stride]
             patch_b = pcb_b_g[i * row_stride:(i + 1) * row_stride, j * col_stride:(j + 1) * col_stride]
             # show_write_imgs(patch_a, patch_b)
-            kp_a, des_a = sift.detectAndCompute(patch_a, None)
-            kp_b, des_b = sift.detectAndCompute(patch_b, None)
+            kp_a = sift.detect(patch_a, None)
+            kp_a, des_a = sift.compute(patch_a, kp_a)
+            kp_b = sift.detect(patch_b, None)
+            kp_b, des_b = sift.compute(patch_b, kp_b)
+            # kp_a, des_a = sift.detectAndCompute(patch_a, None)
+            # kp_b, des_b = sift.detectAndCompute(patch_b, None)
             # # Draw a circle with size of keypoint and show its orientation.
             # patch_a_d = cv2.drawKeypoints(patch_a, kp_a, outImage=1, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
             # patch_b_d = cv2.drawKeypoints(patch_b, kp_b, outImage=1, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
