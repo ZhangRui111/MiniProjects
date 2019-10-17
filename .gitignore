@@ -3,6 +3,7 @@
 
 # My configurations:
 **/data/*
+**/dataset/*
 **/.idea/*
 **/logs/*
 *.iml
