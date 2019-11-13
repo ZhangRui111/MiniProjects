@@ -1,3 +1,17 @@
+"""
+KeyInfo about ResNet:
+
+The convolutional layers in ResNet mostly have 3×3 filters and follow two
+simple design rules:
+(i) for the same output feature map size, the layers have the same number
+of filters, e.g., [100, 32, 16, 16] -> [100, 32, 16, 16] (B, C, W, H) and
+(ii) if the feature map size is halved, the number of  filters is doubled
+so as to preserve the time complexity per layer, e.g., [100, 32, 16, 16] ->
+[100, 64, 8, 8].
+
+ResNet perform downsampling directly by convolutional layers that have a
+stride of 2.
+"""
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,6 +29,14 @@ def conv3x3(in_channels, out_channels, stride=1):
 
 #  Update the optimizer's learning rate.
 def update_lr(optimizer, lr):
+    # An optimizer can have multiple param groups, this is very useful when
+    # one wants to specify per-layer learning rates. e.g.,
+    # optim.SGD([{'params': model.base.parameters()},
+    #            {'params': model.classifier.parameters(), 'lr': 1e-3}],
+    #            lr=1e-2, momentum=0.9)
+    # This means that model.base’s parameters will use the default learning
+    # rate of 1e-2, model.classifier’s parameters will use a learning rate of
+    # 1e-3, and a momentum of 0.9 will be used for all parameters.
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -46,38 +68,45 @@ class ResidualBlock(nn.Module):
 
 # ResNet
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10):
         super().__init__()
-        self.in_channels = 16
+        self.cur_in_channels = 16
         self.conv = conv3x3(3, 16)
         self.bn = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self.make_layer(block, 16, layers[0], stride=1)
-        self.layer2 = self.make_layer(block, 32, layers[1], stride=2)
-        self.layer3 = self.make_layer(block, 64, layers[2], stride=2)
+        self.layer1 = self.make_layer(block, 16, num_blocks[0], stride=1)
+        self.layer2 = self.make_layer(block, 32, num_blocks[1], stride=2)
+        self.layer3 = self.make_layer(block, 64, num_blocks[2], stride=2)
         self.avg_pool = nn.AvgPool2d(8)
         self.fc = nn.Linear(64, num_classes)
 
-    def make_layer(self, block, out_channels, blocks, stride=1):
+    def make_layer(self, block, out_channels, num_block, stride=1):
+        # Whether do downsampling
         downsample = None
-        if (stride != 1) or (self.in_channels != out_channels):
+        if (stride != 1) or (self.cur_in_channels != out_channels):
             downsample = nn.Sequential(
-                conv3x3(self.in_channels, out_channels, stride=stride),
+                conv3x3(self.cur_in_channels, out_channels, stride=stride),
                 nn.BatchNorm2d(out_channels)
             )
-        layers = [block(self.in_channels, out_channels, stride, downsample)]
-        self.in_channels = out_channels
-        for i in range(1, blocks):
+        # Stack multiple Residual unit in one layer.
+        layers = [block(self.cur_in_channels, out_channels, stride, downsample)]
+        self.cur_in_channels = out_channels
+        for i in range(1, num_block):
             layers.append(block(out_channels, out_channels))
         return nn.Sequential(*layers)
+        # * means "Unpacking", e.g.:
+        # def accept(a, b, c):
+        #     print(a + b + c)
+        # a = [1, 2, 3]
+        # accept(*a)
 
     def forward(self, x):
         output = self.conv(x)
         output = self.bn(output)
-        output = self.relu(output)
-        output = self.layer1(output)
-        output = self.layer2(output)
-        output = self.layer3(output)
+        output = self.relu(output)  # [B, 16, 32, 32]
+        output = self.layer1(output)  # [B, 16, 32, 32], stride==1, thus no downsampling
+        output = self.layer2(output)  # [B, 32, 16, 16]
+        output = self.layer3(output)  # [B, 64, 8, 8]
         output = self.avg_pool(output)
         output = output.view(output.size(0), -1)
         output = self.fc(output)

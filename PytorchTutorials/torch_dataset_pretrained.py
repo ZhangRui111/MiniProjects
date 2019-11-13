@@ -4,18 +4,17 @@ from https://towardsdatascience.com/understanding-torch-with-an-example-a-step-b
 """
 import numpy as np
 import torch
-# The torchvision package consists of popular datasets, model architectures,
-# and common image transformations for computer vision.
-import torchvision
+import torch.nn as nn
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 from torch.utils.data.dataset import random_split
+import torchvision
+from torchvision.transforms import transforms
 import torchsummary
 
 
 def data_generation():
     """
     Generate synthetic data for Regression.
-    :return:
     """
     # Data Generation
     np.random.seed(11)
@@ -68,11 +67,8 @@ def split_data_torch():
 def make_train_step(model, loss_fn, optimizer):
     """
     Builds function that performs a step in the train loop
-    :param model:
-    :param loss_fn:
-    :param optimizer:
-    :return:
     """
+
     def train_step(x, y):
         # Sets model to TRAIN mode
         model.train()
@@ -87,6 +83,7 @@ def make_train_step(model, loss_fn, optimizer):
         optimizer.zero_grad()
         # Returns the loss
         return loss.item()
+
     # Returns the function that will be called inside the train loop
     return train_step
 
@@ -178,6 +175,7 @@ def regression_torch_style():
 
     print(model.state_dict())
 
+
 # Todo: make_dot() in package torchviz
 # def show_make_dot():
 #     import graphviz
@@ -197,38 +195,102 @@ def regression_torch_style():
 #     # dot.render()
 
 
+def get_MNIST_dataset():
+    train_dataset = torchvision.datasets.MNIST(root="./data/MNIST/",
+                                               train=True,
+                                               transform=transforms.ToTensor(),
+                                               download=True)
+    test_dataset = torchvision.datasets.MNIST(root="./data/MNIST/",
+                                              train=False,
+                                              transform=transforms.ToTensor(),
+                                              download=True)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+    # Traversal search by two ways.
+    for images, labels in train_loader:
+        print(images.size(), " -- ", labels.size())
+
+    for i, (images, labels) in enumerate(train_loader):
+        print(i, images.size(), " -- ", labels.size())
+
+
 def get_CIFAR10_dataset():
-    """
-    Load CIFAR10 dataset by torchvision and DataLoader
-    :return:
-    """
     # Download and construct CIFAR-10 dataset.
-    train_dataset = torchvision.datasets.CIFAR10(root="./dataset/",
+    train_dataset = torchvision.datasets.CIFAR10(root="./data/CIFAR10/",
                                                  train=True,
-                                                 transform=torchvision.transforms.ToTensor(),
+                                                 transform=transforms.ToTensor(),
                                                  download=True)
+    test_dataset = torchvision.datasets.CIFAR10(root="./data/CIFAR10/",
+                                                train=False,
+                                                transform=transforms.ToTensor(),
+                                                download=True)
+    # DataLoader
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
+
     # Fetch one data pair (read data from disk).
     image, label = train_dataset[0]
     print(image.size(), " -- ", label)
-
-    # DataLoader
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
     # # Get a sample mini-batch from DataLoader.
     # data_iter = iter(train_loader)
     # images, labels = data_iter.next()
     # images, labels = next(data_iter)
     # print(images.size(), " -- ", labels.size())
 
+    # Traversal search by two ways.
     for images, labels in train_loader:
-        # Training code should be written here.
         print(images.size(), " -- ", labels.size())
+
+    for i, (images, labels) in enumerate(train_loader):
+        print(i, images.size(), " -- ", labels.size())
+
+
+def get_CoCoDetection():
+    train_path2data = "./data/COCO/train2017/"
+    train_path2json = "./data/COCO/annotations/instances_train2017.json"
+    val_path2data = "./data/COCO/val2017/"
+    val_path2json = "./data/COCO/annotations/instances_val2017.json"
+
+    coco_train = torchvision.datasets.CocoDetection(root=train_path2data,
+                                                    annFile=train_path2json,
+                                                    transform=transforms.ToTensor())
+    coco_val = torchvision.datasets.CocoDetection(root=val_path2data,
+                                                  annFile=val_path2json,
+                                                  transform=transforms.ToTensor())
+    coco_train_loader = DataLoader(coco_train, batch_size=16, shuffle=True)
+    coco_val_loader = DataLoader(coco_val, batch_size=16, shuffle=True)
+
+    print(coco_train[0])
+
+
+def get_VocDetection():
+    years = ['2007', '2012']
+    sets = ['train', 'trainval', 'val']
+    datasets, loaders = [], []
+
+    # for year in years:
+    #     for set in sets:
+    #         print("{} - {}".format(year, set))
+    #         dataset = torchvision.datasets.VOCDetection("./data/VOC/",
+    #                                                     year=year,
+    #                                                     image_set=set,
+    #                                                     download=True,
+    #                                                     transform=transforms.ToTensor())
+    #         loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    #         datasets.append(dataset)
+    #         loaders.append(loader)
+
+    dataset = torchvision.datasets.VOCDetection("./data/VOC/",
+                                                year='2007',
+                                                image_set='train',
+                                                download=True,
+                                                transform=transforms.ToTensor())
+    loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    print(dataset[0])
 
 
 def pretrained_model():
-    """
-    Download and load the pretrained ResNet-18.
-    :return:
-    """
     resnet34 = torchvision.models.resnet34(pretrained=True).to(device)
     # Finetune only the top layer of the model.
     for param in resnet34.parameters():
@@ -264,10 +326,13 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # regression_torch_style_dataset()
-    regression_torch_style()
+    # regression_torch_style()
     # get_CIFAR10_dataset()
     # pretrained_model()
     # save_load_model()
+    get_MNIST_dataset()
+    # get_VocDetection()
+    # get_CoCoDetection()
 
 
 if __name__ == '__main__':
