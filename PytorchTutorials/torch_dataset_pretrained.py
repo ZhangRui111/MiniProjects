@@ -88,6 +88,16 @@ def make_train_step(model, loss_fn, optimizer):
     return train_step
 
 
+def torchvision_ops():
+    """
+    torchvision involves torchvision.ops.~
+    """
+    # torchvision.ops.nms()
+    # torchvision.ops.roi_pool()
+    # torchvision.ops.roi_align()
+    pass
+
+
 def regression_torch_style_dataset():
     x_train, y_train, x_val, y_val = data_generation()
 
