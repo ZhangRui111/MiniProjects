@@ -226,7 +226,9 @@ def get_MNIST_dataset():
 
 
 def get_CIFAR10_dataset():
-    # Download and construct CIFAR-10 dataset.
+    """ Download and construct CIFAR-10 dataset. """
+    # ToTensor() works for the image, whose elements are in range 0 to 255.
+    # It converts data in the range 0-255 to 0-1.
     train_dataset = torchvision.datasets.CIFAR10(root="./data/CIFAR10/",
                                                  train=True,
                                                  transform=transforms.ToTensor(),
@@ -264,7 +266,7 @@ def get_CoCoDetection():
 
     coco_train = torchvision.datasets.CocoDetection(root=train_path2data,
                                                     annFile=train_path2json,
-                                                    transform=transforms.ToTensor())
+                                                    transform=None)
     coco_val = torchvision.datasets.CocoDetection(root=val_path2data,
                                                   annFile=val_path2json,
                                                   transform=transforms.ToTensor())
@@ -286,7 +288,7 @@ def get_VocDetection():
     #                                                     year=year,
     #                                                     image_set=set,
     #                                                     download=True,
-    #                                                     transform=transforms.ToTensor())
+    #                                                     transform=None)
     #         loader = DataLoader(dataset, batch_size=32, shuffle=True)
     #         datasets.append(dataset)
     #         loaders.append(loader)
@@ -295,7 +297,7 @@ def get_VocDetection():
                                                 year='2007',
                                                 image_set='train',
                                                 download=True,
-                                                transform=transforms.ToTensor())
+                                                transform=None)
     loader = DataLoader(dataset, batch_size=32, shuffle=True)
     print(dataset[0])
 
@@ -340,8 +342,8 @@ def main():
     # get_CIFAR10_dataset()
     # pretrained_model()
     # save_load_model()
-    get_MNIST_dataset()
-    # get_VocDetection()
+    # get_MNIST_dataset()
+    get_VocDetection()
     # get_CoCoDetection()
 
 

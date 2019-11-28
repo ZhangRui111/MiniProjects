@@ -180,6 +180,7 @@ def main():
             cur_lr = cur_lr / 3
             update_lr(optimizer, cur_lr)
 
+    # model.load_state_dict(torch.load("./logs/resnet/params.ckpt"))
     with torch.no_grad():
         correct_num = 0
         total_num = 0

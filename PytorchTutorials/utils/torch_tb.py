@@ -35,7 +35,7 @@ def main():
     batch_size = 64
     learning_rate = 0.001
 
-    train_dataset = torchvision.datasets.MNIST(root="./data/",
+    train_dataset = torchvision.datasets.MNIST(root="./data/MNIST",
                                                train=True,
                                                transform=transforms.ToTensor(),
                                                download=True)
