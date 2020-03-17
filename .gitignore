@@ -11,3 +11,8 @@
 *.xml
 events*
 test.py
+
+# A2C-PPO-ACKTR-GAIL
+*.csv
+*.pt
+*.png
