@@ -4,6 +4,8 @@ from collections import deque
 
 import numpy as np
 import torch
+import torchvision
+from torch.utils.tensorboard import SummaryWriter
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
@@ -46,6 +48,9 @@ def main():
     eval_log_dir = log_dir + "_eval"
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
+    tb_log_dir = log_dir + "tb"
+    utils.cleanup_log_dir(tb_log_dir)
+    logger = SummaryWriter(tb_log_dir)
 
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
@@ -201,6 +206,7 @@ def main():
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + ".pt"))
 
+        # print log info
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
@@ -213,6 +219,13 @@ def main():
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
                         action_loss))
+            logger.add_scalar('loss/value_loss', value_loss, total_num_steps)
+            logger.add_scalar('loss/action_loss', action_loss, total_num_steps)
+            logger.add_scalar('loss/dist_entropy', dist_entropy, total_num_steps)
+            logger.add_scalar('episode_rewards/mean', np.mean(episode_rewards), total_num_steps)
+            logger.add_scalar('episode_rewards/median', np.median(episode_rewards), total_num_steps)
+            logger.add_scalar('episode_rewards/min', np.min(episode_rewards), total_num_steps)
+            logger.add_scalar('episode_rewards/max', np.max(episode_rewards), total_num_steps)
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
