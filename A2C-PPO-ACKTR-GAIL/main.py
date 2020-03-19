@@ -18,9 +18,10 @@ from evaluation import evaluate
 
 def main():
     args = get_args()
-    # Necessary params for Windows
-    args.num_processes = 1
-    args.num_mini_batch = 4
+    args.env_name = 'BreakoutNoFrameskip-v4'
+    # # Necessary params for Windows
+    # args.num_processes = 1
+    # args.num_mini_batch = 4
 
     # args.algo = 'ppo'
     # args.render = True
@@ -30,8 +31,8 @@ def main():
     # args.num_steps = 128
     # args.entropy_coef = 0.01
     # args.use_linear_lr_decay = True
-    # args.num_processes = 8
-    # args.num_mini_batch = 4
+    args.num_processes = 8
+    args.num_mini_batch = 16
 
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
     torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
