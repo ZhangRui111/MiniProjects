@@ -18,22 +18,51 @@ from evaluation import evaluate
 
 def main():
     args = get_args()
-    args.env_name = 'BreakoutNoFrameskip-v4'
     # # Necessary params for Windows
     # args.num_processes = 1
     # args.num_mini_batch = 4
 
+    # # Base params
+    # args.env_name = 'BreakoutNoFrameskip-v4'
+    args.env_name = 'PongNoFrameskip-v4'
     # args.algo = 'ppo'
-    # args.use_gae = True
+    args.algo = 'a2c'
+
+    # # Shared params
     # args.render = True
-    # args.lr = 2.5e-4
-    # args.clip_param = 0.1
-    # args.value_loss_coef = 0.5
-    # args.num_steps = 128
-    # args.entropy_coef = 0.01
-    # args.use_linear_lr_decay = True
+    args.num_env_steps = 1e7
+    args.num_steps = 5
     args.num_processes = 8
-    args.num_mini_batch = 16
+    args.lr = 2.5e-4
+    args.entropy_coef = 0.01
+    args.value_loss_coef = 0.5
+    # args.gamma = 0.99
+    # args.use_gae = True
+    # args.gae_lambda = 0.95
+    # args.max_grad_norm = 0.5
+    # args.recurrent_policy = False
+    # args.use_linear_lr_decay = False
+
+    # # Shared params (almost unmodified)
+    # args.eps = 1e-5  # optimizer param
+    # args.seed = 1
+    # args.cuda_benchmark = False
+    # args.cuda_deterministic = False
+    # args.log_interval = 10
+    # args.save_interval = 100
+    # args.eval_interval = 500
+    # args.log_dir = "./logs/gym/"
+    # args.save_dir = "./trained_models/"
+    # args.no_cuda = False
+    # args.use_proper_time_limits = False
+
+    # # A2C params
+    # args.alpha = 0.99  # optimizer param
+
+    # # PPO params
+    args.ppo_epoch = 4
+    args.num_mini_batch = 32
+    args.clip_param = 0.2
 
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
     torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs

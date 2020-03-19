@@ -48,7 +48,7 @@ def get_args():
     parser.add_argument(
         '--use-gae',
         action='store_true',
-        default=False,
+        default=True,
         help='use generalized advantage estimation')
     parser.add_argument(
         '--gae-lambda',
@@ -92,7 +92,7 @@ def get_args():
         '--num-steps',
         type=int,
         default=5,
-        help='number of forward steps in A2C (default: 5)')
+        help='number of forward steps (default: 5)')
     parser.add_argument(
         '--ppo-epoch',
         type=int,
