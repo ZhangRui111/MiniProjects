@@ -28,7 +28,7 @@ class Policy(nn.Module):
         self.base = base(obs_shape[0], **base_kwargs)
 
         if action_space.__class__.__name__ == "Discrete":
-            # Map the hidden-units to the output-units
+            # Map the hidden-units to the output-action-units
             num_outputs = action_space.n
             self.dist = Categorical(self.base.output_size, num_outputs)
         elif action_space.__class__.__name__ == "Box":
@@ -63,7 +63,12 @@ class Policy(nn.Module):
             action = dist.sample()
 
         action_log_probs = dist.log_probs(action)
-        dist_entropy = dist.entropy().mean()
+        # a = dist.entropy()
+        # b = dist.logits
+        # c = dist.probs
+        # d = torch.log(c/(1-c))
+        # e = 1/(1+torch.exp(-b))
+        dist_entropy = dist.entropy().mean()  # Calculate the entropy using the natural logarithm
 
         return value, action, action_log_probs, rnn_hxs
 
@@ -183,7 +188,6 @@ class CNNBase(NNBase):
         init_ = lambda m: init(m, nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
-
         self.main = nn.Sequential(
             init_(nn.Conv2d(num_inputs, 32, 8, stride=4)), nn.ReLU(),
             init_(nn.Conv2d(32, 64, 4, stride=2)), nn.ReLU(),
@@ -195,7 +199,6 @@ class CNNBase(NNBase):
         # weight, bias initialization
         init_ = lambda m: init(m, nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0))
-
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
         # print(self.critic_linear)
 

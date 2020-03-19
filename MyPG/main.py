@@ -4,11 +4,9 @@ from collections import deque
 
 import numpy as np
 import torch
-import torchvision
 from torch.utils.tensorboard import SummaryWriter
 
 from a2c_ppo_acktr import algo, utils
-from a2c_ppo_acktr.algo import gail
 from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
@@ -18,10 +16,12 @@ from evaluation import evaluate
 
 def main():
     args = get_args()
-    args.env_name = 'BreakoutNoFrameskip-v4'
+    args.env_name = 'PongNoFrameskip-v4'
+    # args.env_name = 'BreakoutNoFrameskip-v4'
+
     # # Necessary params for Windows
-    # args.num_processes = 1
-    # args.num_mini_batch = 4
+    args.num_processes = 1
+    args.num_mini_batch = 4
 
     # args.algo = 'ppo'
     # args.use_gae = True
@@ -32,11 +32,13 @@ def main():
     # args.num_steps = 128
     # args.entropy_coef = 0.01
     # args.use_linear_lr_decay = True
-    args.num_processes = 8
-    args.num_mini_batch = 16
+    # args.num_processes = 8
+    # args.num_mini_batch = 16
 
+    print("{} GPUs in the system".format(torch.cuda.device_count()))
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
-    torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
+    if torch.cuda.device_count() > 1:
+        torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
 
     # print(args.cuda, torch.cuda.is_available(), args.cuda_deterministic)
     # print(torch.backends.cudnn.benchmark, torch.backends.cudnn.deterministic)
@@ -47,10 +49,10 @@ def main():
             torch.backends.cudnn.deterministic = True  # for replicate
 
     log_dir = os.path.expanduser(args.log_dir)
-    eval_log_dir = log_dir + "_eval"
+    eval_log_dir = log_dir + "eval"
+    tb_log_dir = log_dir + "tb"
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
-    tb_log_dir = log_dir + "tb"
     utils.cleanup_log_dir(tb_log_dir)
     logger = SummaryWriter(tb_log_dir)
 
@@ -59,7 +61,7 @@ def main():
 
     # env(s) that wrapped by OpenAI/baselines
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-                         args.gamma, args.log_dir, device, False)
+                         args.gamma, args.log_dir, device, allow_early_resets=False)
 
     # build actor critic networks
     actor_critic = Policy(
@@ -98,24 +100,11 @@ def main():
             args.entropy_coef,
             acktr=True
         )
+    else:
+        raise NotImplemented
 
     if args.gail:
-        assert len(envs.observation_space.shape) == 1
-        discr = gail.Discriminator(
-            envs.observation_space.shape[0] + envs.action_space.shape[0], 100,
-            device)
-        file_name = os.path.join(
-            args.gail_experts_dir, "trajs_{}.pt".format(
-                args.env_name.split('-')[0].lower()))
-        
-        expert_dataset = gail.ExpertDataset(
-            file_name, num_trajectories=4, subsample_frequency=20)
-        drop_last = len(expert_dataset) > args.gail_batch_size
-        gail_train_loader = torch.utils.data.DataLoader(
-            dataset=expert_dataset,
-            batch_size=args.gail_batch_size,
-            shuffle=True,
-            drop_last=drop_last)
+        pass
 
     rollouts = RolloutStorage(
         args.num_steps,
@@ -126,21 +115,20 @@ def main():
     )
 
     obs = envs.reset()
+
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
-
     episode_rewards = deque(maxlen=10)
 
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
     for j in range(num_updates):
-
         # decrease learning rate linearly
         if args.use_linear_lr_decay:
             utils.update_linear_schedule(
-                agent.optimizer, j, num_updates,
-                agent.optimizer.lr if args.algo == "acktr" else args.lr)
+                agent.optimizer, epoch=j, total_num_epochs=num_updates,
+                initial_lr=agent.optimizer.lr if args.algo == "acktr" else args.lr)
 
         for step in range(args.num_steps):
             # Sample actions
@@ -167,25 +155,13 @@ def main():
                             action_log_prob, value, reward, masks, bad_masks)
 
         with torch.no_grad():
+            # Get V(s_{t+1})
             next_value = actor_critic.get_value(
                 rollouts.obs[-1], rollouts.recurrent_hidden_states[-1],
                 rollouts.masks[-1]).detach()
 
         if args.gail:
-            if j >= 10:
-                envs.venv.eval()
-
-            gail_epoch = args.gail_epoch
-            if j < 10:
-                gail_epoch = 100  # Warm up
-            for _ in range(gail_epoch):
-                discr.update(gail_train_loader, rollouts,
-                             utils.get_vec_normalize(envs)._obfilt)
-
-            for step in range(args.num_steps):
-                rollouts.rewards[step] = discr.predict_reward(
-                    rollouts.obs[step], rollouts.actions[step], args.gamma,
-                    rollouts.masks[step])
+            pass
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
