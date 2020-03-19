@@ -24,6 +24,7 @@ def main():
     # args.num_mini_batch = 4
 
     # args.algo = 'ppo'
+    # args.use_gae = True
     # args.render = True
     # args.lr = 2.5e-4
     # args.clip_param = 0.1

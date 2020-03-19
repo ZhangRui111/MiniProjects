@@ -109,6 +109,13 @@ class RolloutStorage(object):
                                advantages,
                                num_mini_batch=None,
                                mini_batch_size=None):
+        """
+        Sample one batch data
+        :param advantages:
+        :param num_mini_batch:
+        :param mini_batch_size:
+        :return:
+        """
         num_steps, num_processes = self.rewards.size()[0:2]
         batch_size = num_processes * num_steps
 
@@ -120,10 +127,12 @@ class RolloutStorage(object):
                 "".format(num_processes, num_steps, num_processes * num_steps,
                           num_mini_batch))
             mini_batch_size = batch_size // num_mini_batch
+
         sampler = BatchSampler(
             SubsetRandomSampler(range(batch_size)),
             mini_batch_size,
             drop_last=True)
+
         for indices in sampler:
             obs_batch = self.obs[:-1].view(-1, *self.obs.size()[2:])[indices]
             recurrent_hidden_states_batch = self.recurrent_hidden_states[:-1].view(

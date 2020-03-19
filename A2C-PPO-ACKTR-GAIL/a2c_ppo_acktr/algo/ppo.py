@@ -34,7 +34,7 @@ class PPO(object):
     def update(self, rollouts):
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
         advantages = (advantages - advantages.mean()) / (
-            advantages.std() + 1e-5)
+            advantages.std() + 1e-5)  # advantage normalization
 
         value_loss_epoch = 0
         action_loss_epoch = 0
@@ -56,7 +56,8 @@ class PPO(object):
                 # Reshape to do in a single forward pass for all steps
                 values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
                     obs_batch, recurrent_hidden_states_batch, masks_batch,
-                    actions_batch)
+                    actions_batch
+                )
 
                 ratio = torch.exp(action_log_probs -
                                   old_action_log_probs_batch)
