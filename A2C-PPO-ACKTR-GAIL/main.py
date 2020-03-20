@@ -28,20 +28,20 @@ def main():
     # args.algo = 'ppo'
     args.algo = 'a2c'
 
-    # # Shared params
+    # # Shared params: # a2c | ppo
     # args.render = True
     args.num_env_steps = 1e7
-    args.num_steps = 5
+    args.num_steps = 5  # 5 | 128
     args.num_processes = 8
-    args.lr = 2.5e-4
+    args.lr = 7e-4  # 7e-4 | 2.5e-4
     args.entropy_coef = 0.01
     args.value_loss_coef = 0.5
+    args.use_linear_lr_decay = False  # False | True
     # args.gamma = 0.99
     # args.use_gae = True
     # args.gae_lambda = 0.95
     # args.max_grad_norm = 0.5
     # args.recurrent_policy = False
-    # args.use_linear_lr_decay = False
 
     # # Shared params (almost unmodified)
     # args.eps = 1e-5  # optimizer param
@@ -61,8 +61,8 @@ def main():
 
     # # PPO params
     args.ppo_epoch = 4
-    args.num_mini_batch = 32
-    args.clip_param = 0.2
+    args.num_mini_batch = 4
+    args.clip_param = 0.1
 
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
     torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
