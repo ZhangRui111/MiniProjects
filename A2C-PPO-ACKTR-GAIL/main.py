@@ -18,13 +18,12 @@ from evaluation import evaluate
 
 def main():
     args = get_args()
-    # # Necessary params for Windows
-    # args.num_processes = 1
-    # args.num_mini_batch = 4
 
     # # Base params
     # args.env_name = 'BreakoutNoFrameskip-v4'
-    args.env_name = 'PongNoFrameskip-v4'
+    # args.env_name = 'PongNoFrameskip-v4'
+    args.env_name = 'QbertNoFrameskip-v4'
+    # args.env_name = 'SeaquestNoFrameskip-v4'
     # args.algo = 'ppo'
     args.algo = 'a2c'
 
@@ -64,6 +63,10 @@ def main():
     args.num_mini_batch = 4
     args.clip_param = 0.1
 
+    # Necessary params for Windows
+    args.num_processes = 1
+    args.num_mini_batch = 4
+
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
     torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
 
@@ -85,6 +88,11 @@ def main():
 
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
+
+    # # Print all env id
+    # from gym import envs
+    # with open("./logs/envs_all.txt", 'w') as fo:
+    #     fo.write(str(envs.registry.all()))
 
     # env(s) that wrapped by OpenAI/baselines
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
