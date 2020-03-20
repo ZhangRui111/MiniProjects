@@ -63,9 +63,9 @@ def main():
     args.num_mini_batch = 4
     args.clip_param = 0.1
 
-    # Necessary params for Windows
-    args.num_processes = 1
-    args.num_mini_batch = 4
+    # # Necessary params for Windows
+    # args.num_processes = 1
+    # args.num_mini_batch = 4
 
     torch.manual_seed(args.seed)  # Sets the seed on the current GPU
     torch.cuda.manual_seed_all(args.seed)  # Sets the seed on all GPUs
