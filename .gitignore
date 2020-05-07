@@ -6,6 +6,7 @@
 **/dataset/*
 **/.idea/*
 **/logs/*
+**/log/*
 *.iml
 *.txt
 *.xml
