@@ -13,6 +13,7 @@ ResNet perform downsampling directly by convolutional layers that have a
 stride of 2.
 """
 import numpy as np
+import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -150,6 +151,7 @@ def main():
     step = 0
     writer = SummaryWriter("./logs/resnet/")
 
+    s_time = time.time()
     for epoch in range(num_epochs):
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(dev)
@@ -179,6 +181,10 @@ def main():
         if (epoch + 1) % 20 == 0:
             cur_lr = cur_lr / 3
             update_lr(optimizer, cur_lr)
+
+    e_time = time.time()
+    train_time = e_time - s_time
+    print("Training takes {}s".format(train_time))
 
     # model.load_state_dict(torch.load("./logs/resnet/params.ckpt"))
     with torch.no_grad():
