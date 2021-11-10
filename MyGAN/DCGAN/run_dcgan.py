@@ -83,6 +83,9 @@ def main():
     elif opt.data == 'xcad':
         transform = transforms.Compose([
             transforms.Resize(opt.img_size),
+            # # there is a bug in older PIL, thus, to deal with grayscale images
+            # # that have only one channel, add fill=(0, )
+            # transforms.RandomRotation(180, fill=(0, )),
             transforms.RandomRotation(180),  # add diversity
             transforms.RandomHorizontalFlip(0.5),  # add diversity
             transforms.RandomVerticalFlip(0.5),  # add diversity
