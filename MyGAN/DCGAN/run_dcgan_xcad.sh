@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python run_dcgan.py --data xcad --n_epochs 10000 --batch_size 64 --lr 0.0001 --img_size 128 --channels 1 --sample_interval 100  --ckp_interval 1000
