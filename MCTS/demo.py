@@ -1,9 +1,10 @@
 """
 A quick Monte Carlo Tree Search implementation by haroldsultan at
-    https://github.com/haroldsultan/MCTS/issues.
+    https://github.com/haroldsultan/MCTS.
 
 For more details on MCTS:
-See http://pubs.doc.ic.ac.uk/survey-mcts-methods/survey-mcts-methods.pdf
+See https://www.cs.swarthmore.edu/~mitchell/classes/cs63/f20/reading/mcts.html
+
 The State is just a game where you have MAX_NUM_TURNS and
     at turn i you can make a choice from [-2,2,3,-3]*i
     and this to an accumulated value.
@@ -18,14 +19,13 @@ import random
 import math
 import hashlib
 import logging
-import argparse
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('MyLogger')
 
-# MCTS scalar: exploitation_value + scalar \times exploration_value
+# exploitation_value + scalar \times exploration_value
 # Larger scalar will increase exploration, smaller will increase exploitation.
-SCALAR = 1 / math.sqrt(2.0)
+EXPLO_SCALAR = 1 / math.sqrt(2.0)
 MAX_NUM_TURNS = 10
 GOAL = 0
 MOVES = [2, -2, 3, -3]
@@ -35,15 +35,16 @@ MAX_VALUE = (5.0 * (MAX_NUM_TURNS - 1) * MAX_NUM_TURNS) / 2  # 225.0
 
 class State(object):
     def __init__(self, value=0, moves=[], turn=MAX_NUM_TURNS):
-        self.value = value  # The accumulated value to be as close to 0 as possible.
-        self.turn = turn
-        self.moves = moves
+        # The accumulated value to be as close to 0 as possible.
+        self.value = value  # the cumulated value, corresponding to the GOAL
+        self.turn = turn  # self.turn decreases from its maximum value
+        self.moves = moves  # the trajectory since the root node
 
     def next_state(self):
-        # make a choice from [-2,2,3,-3]*self.turn
-        # self.turn decreases from its maximum value.
+        # make a choice from [-2, 2, 3, -3] * self.turn
         nextmove = random.choice([x * self.turn for x in MOVES])
-        next = State(self.value + nextmove, self.moves + [nextmove], self.turn - 1)
+        next = State(self.value + nextmove, self.moves + [nextmove],
+                     self.turn - 1)
         return next
 
     def terminal(self):
@@ -56,7 +57,8 @@ class State(object):
         return r
 
     def __hash__(self):
-        # hashlib.md5().hexdigest() => get the hexadecimal digest of the strings fed to it.
+        # hashlib.md5().hexdigest() =>
+        #     get the hexadecimal digest of the strings fed to it.
         return int(hashlib.md5(str(self.moves).encode('utf-8')).hexdigest(), 16)
 
     def __eq__(self, other):
@@ -65,7 +67,7 @@ class State(object):
         return False
 
     def __repr__(self):
-        s = "Value: %d -- Moves: %s" % (self.value, self.moves)
+        s = "Value: {:d} -- Moves: {}".format(self.value, self.moves)
         return s
 
 
@@ -91,7 +93,8 @@ class Node(object):
         return False
 
     def __repr__(self):
-        s = "Node; children: %d; visits: %d; reward: %f" % (len(self.children), self.visits, self.reward)
+        s = "Node; children: {:d}; visits: {:d}; reward: {:f}".format(
+            len(self.children), self.visits, self.reward)
         return s
 
 
@@ -137,37 +140,35 @@ def tree_policy(node):
             return explore(node)
         elif random.uniform(0, 1) < 0.5:
             # exploit the best child node with a certain possibility.
-            node = best_child(node, SCALAR)
+            node = best_child(node, EXPLO_SCALAR)
         else:
             # explore a new node if not fully explored;
             # otherwise, exploit the best child node.
             if node.fully_explored() is False:
                 return explore(node)
             else:
-                node = best_child(node, SCALAR)
+                node = best_child(node, EXPLO_SCALAR)
     return node
 
 
-def default_policy(state):
+def simulate(state):
     """ Return the reward of next_state. """
     while state.terminal() is False:
         state = state.next_state()
     return state.reward()
 
 
-def backup(node, reward):
+def backpropagation(node, reward):
     """
     Update the node.visits and node.reward from the child
     node to the parent node iteratively.
     """
     while node is not None:
-        node.visits += 1
-        node.reward += reward
+        node.update(reward)
         node = node.parent
-    return
 
 
-def uct_search(num_sims, root):
+def uct_alg(num_sims, root):
     """
     UCT is the algorithm used in the vast majority of
         current MCTS implementations.
@@ -176,30 +177,28 @@ def uct_search(num_sims, root):
     # Sampling to get accurate rewards for every nodes.
     for iter in range(int(num_sims)):
         if iter % 10000 == 9999:
-            logger.info("simulation: %d" % iter)
+            logger.info("simulation: {:d}".format(iter))
             logger.info(root)
         selected_node = tree_policy(root)
-        reward = default_policy(selected_node.state)
-        backup(selected_node, reward)
-    # fully exploit to get the best child node.
+        reward = simulate(selected_node.state)
+        backpropagation(selected_node, reward)
+    # fully exploit (scalar=0) to get the best child node.
     return best_child(root, scalar=0)
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description='MCTS research code')
-    # parser.add_argument('--num_sims', action="store", required=True, type=int)
-    # parser.add_argument('--levels', action="store", required=True, type=int, choices=range(NUM_TURNS))
-    # args = parser.parse_args()
     num_sims = 5000  # Number of simulations to run.
-    num_levels = 4  # How many levels in a tree: <= MAX_NUM_TURNS
+    num_levels = 10  # How many levels in a tree: <= MAX_NUM_TURNS
 
     current_node = Node(State())
-    for l in range(num_levels):
-        # num_sims / (l + 1) => the deeper level has less sampling to reduce computation
+    for lev in range(num_levels):
+        # num_sims / (l + 1) =>
+        #     the deeper level has less sampling to reduce computation
         # Because deeper the tree is, more trajectories the tree has.
-        current_node = uct_search(num_sims / (l + 1), current_node)
-        print("level %d" % l)
-        print("Num Children: %d" % len(current_node.children))
+        current_node = uct_alg(num_sims / (lev + 1), current_node)
+        print("level {:d}".format(lev))
+        print("Num Children: {:d}".format(len(current_node.children)))
         for i, c in enumerate(current_node.children):
             print(i, c)
-        print("Best Child: %s\n--------------------------------" % current_node.state)
+        print("Best Child: {}\n--------------------------------".format(
+            current_node.state))
