@@ -128,26 +128,14 @@ def best_child(node, scalar):
 
 def selection_and_expansion(node):
     """
-    A policy to 'exploitation' with a certain possibility
-        in a game where there are many options.
-    You may never/not want to fully explore first.
-    :param node:
-    :return:
+    explore a new node if not fully explored;
+    otherwise, exploit the best child node.
     """
     while node.state.terminal() is False:
-        if len(node.children) == 0:
-            # Create a child node when there is no child node.
-            return explore(node)
-        elif random.uniform(0, 1) < 0.5:
-            # exploit the best child node with a certain possibility.
+        if node.fully_explored():
             node = best_child(node, EXPLO_SCALAR)
-        else:
-            # explore a new node if not fully explored;
-            # otherwise, exploit the best child node.
-            if node.fully_explored():
-                node = best_child(node, EXPLO_SCALAR)
-            else:
-                return explore(node)
+        else:  # reach a leaf node
+            return explore(node)
     return node
 
 
